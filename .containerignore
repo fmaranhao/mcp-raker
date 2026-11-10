@@ -6,5 +6,12 @@
 .mcp.json
 .containerignore
 .gitattributes
+**/.env
+**/.env.*
+**/token.json
+**/*.key
+**/*.pem
+deploy/
+docs/
 README.md
 LICENSE

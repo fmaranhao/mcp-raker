@@ -13,6 +13,22 @@ import (
 
 const loopbackIP = "127.0.0.1"
 
+func TestInvalidCredentialURLsAreNotEchoed(t *testing.T) {
+	for _, key := range []string{"MOONRAKER_URL", "MOONRAKER_PROXY"} {
+		t.Run(key, func(t *testing.T) {
+			clearEnv(t)
+			t.Setenv(key, "http://alice:REVIEW_FAKE_SECRET@host/%zz")
+			_, err := config.Load()
+			if err == nil {
+				t.Fatal("invalid URL accepted")
+			}
+			if strings.Contains(err.Error(), "REVIEW_FAKE_SECRET") {
+				t.Fatal("credential echoed in startup error")
+			}
+		})
+	}
+}
+
 // clearEnv unsets every variable Load reads so a test starts from a clean slate.
 func clearEnv(t *testing.T) {
 	t.Helper()

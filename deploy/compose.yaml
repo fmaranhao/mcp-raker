@@ -1,0 +1,46 @@
+services:
+  moonraker-mcp:
+    # Build the reviewed fork locally; no published fork image is assumed.
+    image: mcp-raker-readonly:${MCP_RAKER_REVISION:-reviewed}
+    build:
+      context: ..
+      dockerfile: Containerfile
+      args:
+        VERSION: readonly
+        REVISION: ${MCP_RAKER_REVISION:-reviewed}
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      MOONRAKER_URL: http://voron-klipper.maranhao.cc:7125
+      MOONRAKER_API_KEY: ${MOONRAKER_API_KEY:-}
+      MOONRAKER_TOKEN_FILE: ""
+      MOONRAKER_ENABLE_ADMIN: "false"
+      MCP_HTTP_HOST: 0.0.0.0
+      MCP_HTTP_PORT: "8000"
+      MCP_HTTP_TOKEN: ${MCP_AUTH_TOKEN:?Set a dedicated MCP bearer token in protected .env}
+    networks: [mcp-moonraker]
+    # No host ports, printer_data mount, Docker socket or printer device access.
+
+  openai-tunnel-moonraker:
+    image: ghcr.io/openai/tunnel-client:latest
+    restart: unless-stopped
+    depends_on: [moonraker-mcp]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    command: [run, --profile-file, /etc/tunnel-client.yaml]
+    environment:
+      CONTROL_PLANE_API_KEY: ${OPENAI_TUNNEL_API_KEY:?Set the runtime tunnel key locally}
+      CONTROL_PLANE_TUNNEL_ID: ${MOONRAKER_TUNNEL_ID:?Set the separate Moonraker tunnel ID}
+      MOONRAKER_MCP_AUTH_HEADER: Bearer ${MCP_AUTH_TOKEN:?Set MCP_AUTH_TOKEN}
+    volumes:
+      - ./tunnel.yaml:/etc/tunnel-client.yaml:ro
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    networks: [mcp-moonraker]
+
+networks:
+  mcp-moonraker:
+    driver: bridge

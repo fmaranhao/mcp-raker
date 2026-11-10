@@ -11,7 +11,9 @@ RUN echo 'nobody:x:65534:65534:Nobody:/home/nobody:' > /tmp/passwd && \
 WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
-COPY . .
+# Copy source explicitly: deployment .env files must never enter build layers.
+COPY cmd ./cmd
+COPY internal ./internal
 RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=${VERSION} -X main.revision=${REVISION}" -trimpath ./cmd/mcp-raker
 
 FROM scratch

@@ -40,3 +40,6 @@ token.json
 
 # Personal notes
 TODO.md
+
+# Protected owner deployment settings
+deploy/.env

@@ -1,3 +1,13 @@
+# Read-only diagnostic fork
+
+This is **fmaranhao/mcp-raker**, an owner-requested diagnostic fork of [lexfrei/mcp-raker](https://github.com/lexfrei/mcp-raker), based on commit `1325f0a2323013ef35a4c1f261213a06c9b60991`. See [design](docs/readonly-design.md), [plan](docs/readonly-plan.md) and [two-container deployment](deploy/README.md). Implementation refers to [IT Projects issue #81](https://github.com/fmaranhao/IT-Projects-Handbook/issues/81).
+
+**This fork's executable is always read-only.** It registers 22 explicit diagnostic tools and enforces an independent backend GET/route/query/origin allowlist. Operational tools cannot be enabled; `MOONRAKER_ENABLE_ADMIN=true` fails startup. Config, G-code and log reads under Moonraker's registered printer_data roots are allowed by the owner, with bounded file ranges/tails. No raw proxy or arbitrary host-file access. Data reads can disclose secrets; no automatic redaction is claimed.
+
+The original upstream README below describes capabilities retained in source for comparison and upstream tests, **not tools available from this fork's executable**. Its operational examples/admin instructions do not apply. Use the deployment runbook above. No live printer connection or published fork image is claimed.
+
+---
+
 # mcp-raker
 
 [![CI](https://github.com/lexfrei/mcp-raker/actions/workflows/ci.yml/badge.svg)](https://github.com/lexfrei/mcp-raker/actions/workflows/ci.yml)
