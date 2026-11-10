@@ -12,15 +12,17 @@ Includes status, temperatures, cached console/errors, printer objects, history/q
 
 ## Two-container layout
 
-- `moonraker-mcp`: source-built reviewed fork; fixed DNS upstream `http://voron-klipper.maranhao.cc:7125`. Moonraker stays on the printer. No changes to Kalico, Happy Hare, Mainsail or printer firmware.
+- `moonraker-mcp`: versioned read-only fork image; fixed DNS upstream `http://voron-klipper.maranhao.cc:7125`. Moonraker stays on the printer. No changes to Kalico, Happy Hare, Mainsail or printer firmware.
 - `openai-tunnel-moonraker`: existing OpenAI tunnel pattern, separate tunnel ID and dedicated MCP bearer token. HTTP discovery and normal requests receive the token through protected environment references.
 - Both on an ordinary private Docker bridge, with outbound connectivity and no host-published ports. No Docker socket, devices or privileged mode. Moonraker MCP is non-root via the upstream scratch image and runs with a read-only filesystem. The tunnel has only a read-only profile and bounded temporary storage.
 
 Moonraker's existing documented trusted-client ranges may or may not include this bridge's translated source. Do not broaden trusted_clients automatically. If authentication is required, use a locally held Moonraker API key; the backend policy, not that broad key, restricts operations. Username/password JWT login is rejected to avoid authorizing extra POST routes. Static token is supported by the executable if separately configured, but the supplied Compose uses API key/trusted LAN only. HTTPS upstream URLs use Go's normal certificate validation; this recipe uses the existing private LAN HTTP listener.
 
-## Build and inspect before connecting a tunnel
+## Pull and inspect before connecting a tunnel
 
-Use an authenticated checkout of `fmaranhao/mcp-raker` on the reviewed task branch, or merged fork `master`. The build context must include the entire repository, not only deploy files. No published GHCR fork image is assumed, and no release/tag is created by this task.
+Use the reviewed deploy files from `fmaranhao/mcp-raker`. The Compose recipe pulls `ghcr.io/fmaranhao/mcp-raker:0.3.0`, built by the fork's Release workflow from tag `v0.3.0` (merged commit `b6fe4d8343c40852b194643bf20cfb4626099e04`). The multi-platform image supports linux/amd64 and linux/arm64. No source checkout/build context is needed on the deployment host. Publication is separate from live commissioning.
+
+Verified multi-platform manifest digest: `sha256:8287607b0a820fd234ccbc66ed90dba8fa906295146739769bbbfd8c48c31967`. To pin it, use `ghcr.io/fmaranhao/mcp-raker:0.3.0@sha256:8287607b0a820fd234ccbc66ed90dba8fa906295146739769bbbfd8c48c31967`. [Release build](https://github.com/fmaranhao/mcp-raker/actions/runs/42732442576) built both platforms, merged the manifest and signed the tags.
 
 ```bash
 cd /path/to/mcp-raker/deploy
@@ -28,13 +30,13 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-Fill `.env` locally: generate a dedicated random MCP_AUTH_TOKEN, use the existing protected runtime key where appropriate, and create a separate Moonraker tunnel using the same owner-managed process as Arcane/MikroTik/Technitium. Do not paste keys into chat or Git. Set MCP_RAKER_REVISION to the reviewed commit's short SHA for traceability.
+Fill `.env` locally: generate a dedicated random MCP_AUTH_TOKEN, use the existing protected runtime key where appropriate, and create a separate Moonraker tunnel using the same owner-managed process as Arcane/MikroTik/Technitium. Do not paste keys into chat or Git.
 
-Validate Compose without printing its interpolated credentials, then build/start **only** the MCP first:
+Validate Compose without printing its interpolated credentials, then pull/start **only** the MCP first:
 
 ```bash
 docker compose config --quiet
-docker compose build moonraker-mcp
+docker compose pull moonraker-mcp
 docker compose up -d moonraker-mcp
 docker compose logs --tail=30 moonraker-mcp
 ```
@@ -64,8 +66,8 @@ Confirm actual plugin reads, unauthorized HTTP rejection and container isolation
 
 ## Maintenance and rollback
 
-Source-built local image updates are manual: review upstream changes, rerun full tests/race checks, build a new reviewed image tag and update only this pair. Do not blindly auto-merge upstream or track its operational image under this service name. Retain the prior source revision/image and protected .env/profile outside Git. Existing general container update policies should not replace this local image with an unreviewed upstream build.
+Use explicit reviewed fork release versions (or their immutable manifest digests). Review upstream changes and test each release before updating only this pair. Do not blindly auto-merge upstream or track its operational image under this service name. Retain the prior image version/digest and protected .env/profile outside Git. Existing general container update policies should not replace this fork image with an unreviewed upstream build. Avoid tracking latest during commissioning.
 
 For withdrawal or a failed update, stop the new tunnel first, restore the prior reviewed image/source if appropriate, restart only this pair and revalidate reads. Otherwise keep the pair stopped and revoke its separate tunnel/plugin registration and credentials as needed. Existing Mainsail/Moonraker are independent and stay in place. Do not use `docker compose down` against the whole existing ai-mcp project.
 
-When adding to the existing Arcane ai-mcp project, merge these two service definitions, this bridge and the read-only profile mount into its saved Compose using absolute host paths. Do not replace that project's entire Compose file. Adjust the build context to the reviewed fork checkout, or build/tag the image first and omit build from the saved project; neither pattern requires a third container.
+When adding to the existing Arcane ai-mcp project, merge these two service definitions, this bridge and the read-only profile mount into its saved Compose using absolute host paths. Do not replace that project's entire Compose file. Use the versioned GHCR image and omit build from the saved project; this requires no third container or printer_data mount.

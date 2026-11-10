@@ -4,7 +4,7 @@ This is **fmaranhao/mcp-raker**, an owner-requested diagnostic fork of [lexfrei/
 
 **This fork's executable is always read-only.** It registers 22 explicit diagnostic tools and enforces an independent backend GET/route/query/origin allowlist. Operational tools cannot be enabled; `MOONRAKER_ENABLE_ADMIN=true` fails startup. Config, G-code and log reads under Moonraker's registered printer_data roots are allowed by the owner, with bounded file ranges/tails. No raw proxy or arbitrary host-file access. Data reads can disclose secrets; no automatic redaction is claimed.
 
-The original upstream README below describes capabilities retained in source for comparison and upstream tests, **not tools available from this fork's executable**. Its operational examples/admin instructions do not apply. Use the deployment runbook above. No live printer connection or published fork image is claimed.
+The original upstream README below describes capabilities retained in source for comparison and upstream tests, **not tools available from this fork's executable**. Its operational examples/admin instructions do not apply. Use the deployment runbook above. The fork publishes `ghcr.io/fmaranhao/mcp-raker:0.3.0` for linux/amd64 and linux/arm64. No live printer connection is claimed.
 
 ---
 
