@@ -59,6 +59,38 @@ func TestDiagnosticCatalogueCannotEnableOperations(t *testing.T) {
 
 type authRoundTripper struct{ token string }
 
+func TestDiagnosticHTTPModernDiscovery(t *testing.T) {
+	server := mcp.NewServer(&mcp.Implementation{Name: serverName, Version: "test"}, newServerOptions(testLogger(), false))
+	// Version/catalogue operations do not contact Moonraker.
+	registerTools(server, nil, false)
+	httpServer := httptest.NewServer(mcpHTTPHandler(server, "test-token"))
+	defer httpServer.Close()
+	client := mcp.NewClient(&mcp.Implementation{Name: "modern-test", Version: "test"}, nil)
+	session, err := client.Connect(t.Context(), &mcp.StreamableClientTransport{
+		Endpoint: httpServer.URL + "/mcp", HTTPClient: &http.Client{Transport: authRoundTripper{"test-token"}},
+		DisableStandaloneSSE: true,
+	}, &mcp.ClientSessionOptions{ProtocolVersion: "2026-07-28"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Close()
+	if got := session.InitializeResult().ProtocolVersion; got != "2026-07-28" {
+		t.Fatalf("modern discovery negotiated %s, want 2026-07-28", got)
+	}
+	catalogue, err := session.ListTools(t.Context(), nil)
+	if err != nil || len(catalogue.Tools) != 22 {
+		t.Fatalf("modern catalogue: %v, %v", catalogue, err)
+	}
+	result, err := session.CallTool(t.Context(), &mcp.CallToolParams{Name: "moonraker_mcp_version", Arguments: map[string]any{}})
+	if err != nil || result.IsError {
+		t.Fatalf("modern version read: %v, %v", result, err)
+	}
+	result, err = session.CallTool(t.Context(), &mcp.CallToolParams{Name: "moonraker_gcode_script", Arguments: map[string]any{"script": "G28"}})
+	if err == nil && !result.IsError {
+		t.Fatal("modern transport exposed printer operations")
+	}
+}
+
 func (a authRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	r = r.Clone(r.Context())
 	r.Header.Set("Authorization", "Bearer "+a.token)
