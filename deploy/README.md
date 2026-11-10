@@ -43,6 +43,8 @@ docker compose logs --tail=30 moonraker-mcp
 
 MCP HTTP bearer authentication is required when binding to the bridge. No host port needs opening. A running process alone does not prove catalogue or upstream readiness. The tunnel configuration waits up to 90 seconds for startup; actual container/tunnel compatibility remains to be checked on Docker-AMD.
 
+The HTTP handler uses sessionless mode so SDK discovery can advertise and serve MCP 2026-07-28; session-based mode supports only earlier protocol versions. Legacy 2025-11-25 clients remain covered by read/authentication tests. Diagnostic tools require no persistent client session or standalone SSE subscription. This transport choice does not change the tool catalogue or upstream request policy.
+
 Then start the tunnel and check readiness/logs before connecting the ChatGPT developer plugin:
 
 ```bash

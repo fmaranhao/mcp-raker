@@ -288,7 +288,9 @@ func runHTTPServer(ctx context.Context, logger *slog.Logger, server *mcp.Server,
 
 func mcpHTTPHandler(server *mcp.Server, token string) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/mcp", bearerAuth(mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server { return server }, nil), token))
+	// Modern MCP discovery requires sessionless HTTP in the Go SDK. The
+	// diagnostic tools keep no client session state; legacy clients also work.
+	mux.Handle("/mcp", bearerAuth(mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server { return server }, &mcp.StreamableHTTPOptions{Stateless: true}), token))
 
 	return mux
 }
