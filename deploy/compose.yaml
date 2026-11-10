@@ -1,13 +1,7 @@
 services:
   moonraker-mcp:
-    # Build the reviewed fork locally; no published fork image is assumed.
-    image: mcp-raker-readonly:${MCP_RAKER_REVISION:-reviewed}
-    build:
-      context: ..
-      dockerfile: Containerfile
-      args:
-        VERSION: readonly
-        REVISION: ${MCP_RAKER_REVISION:-reviewed}
+    # Versioned read-only fork release; never substitute the operational upstream image.
+    image: ghcr.io/fmaranhao/mcp-raker:0.3.0
     restart: unless-stopped
     read_only: true
     cap_drop: [ALL]
