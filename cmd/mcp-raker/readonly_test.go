@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,24 @@ import (
 	"github.com/lexfrei/mcp-raker/internal/config"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
+
+// OpenAI rejects parameter schemas that omit properties, even for no-arg tools.
+// Check the advertised wire representation, rather than the Go schema value.
+func TestDiagnosticInputSchemasHaveProperties(t *testing.T) {
+	for name, tool := range listTools(t, false) {
+		raw, err := json.Marshal(tool.InputSchema)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var schema map[string]json.RawMessage
+		if err = json.Unmarshal(raw, &schema); err != nil {
+			t.Fatal(err)
+		}
+		if properties, ok := schema["properties"]; !ok || string(properties) == "null" {
+			t.Errorf("%s: input schema lacks properties object: %s", name, raw)
+		}
+	}
+}
 
 func TestDiagnosticCatalogueCannotEnableOperations(t *testing.T) {
 	for _, admin := range []bool{false, true} {

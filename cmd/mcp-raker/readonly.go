@@ -7,8 +7,22 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/lexfrei/mcp-raker/internal/moonraker"
+	"github.com/lexfrei/mcp-raker/internal/tools"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
+
+// addDiagnosticTool preserves an explicit properties object for parameter-free
+// tools. The SDK's inferred schema omits it, which some OpenAI clients reject.
+func addDiagnosticTool[In, Out any](server *mcp.Server, tool *mcp.Tool, handler mcp.ToolHandlerFor[In, Out]) {
+	var input In
+	if _, noParams := any(input).(tools.NoParams); noParams && tool.InputSchema == nil {
+		tool.InputSchema = map[string]any{
+			"type": "object", "properties": map[string]any{}, "additionalProperties": false,
+		}
+	}
+
+	mcp.AddTool(server, tool, handler)
+}
 
 type diagnosticFileParams struct {
 	Root      string `json:"root,omitempty"       jsonschema:"Moonraker root: config, gcodes or logs; default config"`
