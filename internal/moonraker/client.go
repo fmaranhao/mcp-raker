@@ -60,6 +60,9 @@ type UploadOptions struct {
 
 // Options configures a Client.
 type Options struct {
+	// ReadOnly enforces the diagnostic request allowlist. The fork executable
+	// always enables it; the zero value preserves upstream library test behavior.
+	ReadOnly bool
 	// BaseURL is the Moonraker base URL; empty falls back to localhost:7125.
 	BaseURL string
 	// APIKey, when set, is sent as the X-Api-Key header on every request.
@@ -86,6 +89,7 @@ var _ API = (*Client)(nil)
 
 // Client is the concrete moonraker.API backed by net/http.
 type Client struct {
+	readOnly  bool
 	baseURL   string
 	http      Doer
 	apiKey    string
@@ -120,6 +124,7 @@ func New(opts *Options) (*Client, error) {
 	}
 
 	client := &Client{
+		readOnly:  opts.ReadOnly,
 		baseURL:   strings.TrimRight(orDefault(opts.BaseURL, fallbackURL), "/"),
 		http:      &http.Client{Timeout: timeout, Transport: opts.Transport},
 		apiKey:    opts.APIKey,
@@ -128,6 +133,12 @@ func New(opts *Options) (*Client, error) {
 		tokenPath: opts.TokenPath,
 		userAgent: orDefault(opts.UserAgent, defaultUserAgent),
 		logger:    logger,
+	}
+	if opts.ReadOnly {
+		err := client.enforceReadOnly(opts)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if opts.Token != "" {

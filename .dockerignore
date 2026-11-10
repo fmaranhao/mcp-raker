@@ -1,0 +1,12 @@
+.git
+.github
+**/.env
+**/.env.*
+**/token.json
+**/*.key
+**/*.pem
+**/*.test
+deploy
+docs
+README.md
+.mcp.json

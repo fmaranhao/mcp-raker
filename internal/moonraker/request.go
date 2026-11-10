@@ -135,6 +135,13 @@ func (c *Client) roundtrip(
 	body []byte,
 	contentType string,
 ) ([]byte, int, error) {
+	if c.readOnly {
+		err := validateReadRequest(method, path, query)
+		if err != nil {
+			return nil, 0, err
+		}
+	}
+
 	if c.usesJWT() {
 		authErr := c.ensureAuth(ctx)
 		if authErr != nil {
@@ -199,9 +206,18 @@ func (c *Client) attempt(
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	data, readErr := io.ReadAll(resp.Body)
+	var responseReader io.Reader = resp.Body
+	if c.readOnly {
+		responseReader = io.LimitReader(resp.Body, maxReadResponseBytes+1)
+	}
+
+	data, readErr := io.ReadAll(responseReader)
 	if readErr != nil {
 		return nil, 0, apiErr(readErr, "read %s %s response", method, path)
+	}
+
+	if c.readOnly && len(data) > maxReadResponseBytes {
+		return nil, 0, errors.New("diagnostic response exceeds 4 MiB limit")
 	}
 
 	return data, resp.StatusCode, nil

@@ -112,7 +112,7 @@ func parseTimeout(raw string) (time.Duration, error) {
 
 	parsed, err := time.ParseDuration(raw)
 	if err != nil || parsed <= 0 {
-		return 0, errors.Wrap(ErrInvalidTimeout, raw)
+		return 0, ErrInvalidTimeout
 	}
 
 	return parsed, nil
@@ -190,7 +190,7 @@ func (c *Config) ProxyTransport() (http.RoundTripper, error) {
 func parseProxy(raw string) (*url.URL, error) {
 	parsed, err := url.Parse(raw)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		return nil, errors.Wrap(ErrInvalidProxy, raw)
+		return nil, ErrInvalidProxy
 	}
 
 	return parsed, nil
@@ -233,7 +233,7 @@ func (c *Config) HTTPAddr() string {
 func (c *Config) validate() error {
 	parsed, err := url.Parse(c.URL)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		return errors.Wrap(ErrInvalidURL, c.URL)
+		return ErrInvalidURL
 	}
 
 	if c.HTTPPort != "" {

@@ -1,0 +1,12 @@
+mcp:
+  server_urls:
+    - channel: main
+      url: http://moonraker-mcp:8000/mcp
+  extra_headers:
+    Authorization: env:MOONRAKER_MCP_AUTH_HEADER
+  discovery_extra_headers:
+    Authorization: env:MOONRAKER_MCP_AUTH_HEADER
+  startup_wait_timeout: 90s
+log:
+  level: info
+  format: json
